@@ -1,0 +1,104 @@
+{% extends 'base.html' %} {% block content %}
+
+<section class="bg-gray-100 h-screen flex items-center justify-center">
+    <div class="w-full max-w-2xl mx-auto">
+        <div class="flex flex-col h-full border rounded-lg shadow-lg bg-white">
+            <!-- Header -->
+            <div class="flex items-center justify-between bg-indigo-600 text-white p-4 rounded-t-lg">
+                <div class="flex items-center">
+                    <img class="h-10 w-10 rounded-full mr-4" src="https://via.placeholder.com/100" alt="User Avatar" />
+                    <div>
+                        <p class="font-bold">{{other_user}}</p>
+                        <p>{{room_name}}</p>
+                        <p class="text-sm opacity-75">Online</p>
+                    </div>
+                </div>
+                <button class="bg-indigo-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-800">
+                    Logout
+                </button>
+            </div>
+
+            <!-- Messages Section -->
+            <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-4">
+                <!-- Sender Message -->
+                {% for chat in all_chats %} {% if chat.sender == request.user %}
+                <div class="flex justify-start">
+                    <div class="bg-gray-200 rounded-lg p-3 max-w-xs">
+                        <p class="text-gray-800">Hello! How are you?</p>
+                        <p class="text-xs text-gray-500 text-right mt-1">10:00 AM</p>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Receiver Message -->
+                <div class="flex justify-end">
+                    <div class="bg-indigo-500 text-white rounded-lg p-3 max-w-xs">
+                        <p>Hey! I'm good, how about you?</p>
+                        <p class="text-xs opacity-75 text-right mt-1">10:02 AM</p>
+                    </div>
+                </div>
+                {% endif %} {% endfor %}
+            </div>
+
+            <!-- Input Section -->
+            <div class="border-t p-4">
+                <form id="message-form" class="flex">
+                    <input type="text" id="message" placeholder="Type a message..."
+                        class="flex-1 px-4 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-r-md hover:bg-indigo-700">
+                        Send
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript for auto-scroll and submitting message
+        const messages = document.getElementById('messages');
+        const messageForm = document.getElementById('message-form');
+        const messageInput = document.getElementById('message');
+
+        const Chat_socket = new WebSocket(`ws://${window.location.host}/ws/chat/${room_name}/`);
+
+        function appendMessage(text, isSender = true) {
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = `flex justify-${isSender ? 'end' : 'start'} mt-2`;
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `${isSender ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-800'} rounded-lg p-3 max-w-xs`;
+            messageDiv.innerHTML = `<p>${text}</p><p class="text-xs opacity-75 text-right mt-1">${new Date().toLocaleTimeString()}</p>`;
+
+            messageWrapper.appendChild(messageDiv);
+            messages.appendChild(messageWrapper);
+            messages.scrollTop = messages.scrollHeight;  // Auto-scroll to the bottom
+        }
+
+        messageForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const message = messageInput.value;
+            if (message.trim()) {
+                Chat_socket.send(
+                    JSON.stringify({
+                        'message': message,
+                        'sender': '{{request.user.username}}',
+                        'receiver': '{{other_user.username}}'
+                    })
+                ) // Append sender's message
+                messageInput.value = ''; // Clear input field
+            }
+        })
+
+        Chat_socket.onmessage = (e) => {
+            let data = JSON.parse(e.data)
+
+            if (data.sender == '{{request.user.username}}') {
+                appendMessage(data.message)
+            }
+        else {
+            appendMessage(data.message, isSender = false)
+
+        }
+    }
+    </script>
+</section>
+{% endblock %}
