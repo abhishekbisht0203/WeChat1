@@ -18,7 +18,7 @@ def chat(request, id):
     all_users = User.objects.exclude(username= request.user.username)
     other_user = get_object_or_404(User, id=id)
     room_name = generate_room_name(request.user.id, id)
-    return render(request, 'chat.html', {'all_users': all_users,'all_chats': all_chats, 'other_user': other_user, 'room_name': room_name})
+    return render(request, 'chat.html', {'all_users': all_users,'all_chats': all_chats, 'other_user': other_user, 'room_name': str(room_name)})
 
 @login_required
 def friends(request):
@@ -27,4 +27,4 @@ def friends(request):
 
 def generate_room_name(sender_id, receiver_id):
     sorted_ids = sorted([sender_id, receiver_id])
-    return str(sorted_ids[0]) + str(sorted_ids[1])
+    return f"room_{sorted_ids[0]}_{sorted_ids[1]}"
